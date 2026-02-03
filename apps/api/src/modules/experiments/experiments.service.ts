@@ -1,8 +1,18 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { computeDid } from "./did";
-import type { ExperimentExposure, RevenueEvent } from "@prisma/client";
 import { Queue, Worker } from "bullmq";
+
+type ExposureLike = {
+  subjectId: string;
+  group: "control" | "treatment";
+};
+
+type RevenueEventLike = {
+  subjectId: string;
+  occurredAt: Date;
+  amountCents: number;
+};
 
 @Injectable()
 export class ExperimentsService implements OnModuleInit {
@@ -80,7 +90,7 @@ export class ExperimentsService implements OnModuleInit {
     const preStart = new Date(startAt.getTime() - preDays * 24 * 60 * 60 * 1000);
     const postEnd = new Date(startAt.getTime() + postDays * 24 * 60 * 60 * 1000);
 
-    const subjectIds = exposures.map((exposure: ExperimentExposure) => exposure.subjectId);
+    const subjectIds = exposures.map((exposure: ExposureLike) => exposure.subjectId);
     const revenue = await this.prisma.revenueEvent.findMany({
       where: {
         tenantId,
@@ -90,15 +100,15 @@ export class ExperimentsService implements OnModuleInit {
     });
 
     const toMap = (group: "control" | "treatment") => {
-      const groupSubjects = exposures.filter((exp: ExperimentExposure) => exp.group === group);
-      return groupSubjects.map((subject: ExperimentExposure) => {
-        const subjectEvents = revenue.filter((event: RevenueEvent) => event.subjectId === subject.subjectId);
+      const groupSubjects = exposures.filter((exp: ExposureLike) => exp.group === group);
+      return groupSubjects.map((subject: ExposureLike) => {
+        const subjectEvents = revenue.filter((event: RevenueEventLike) => event.subjectId === subject.subjectId);
         const preAmount = subjectEvents
-          .filter((event: RevenueEvent) => event.occurredAt < startAt)
-          .reduce((sum: number, event: RevenueEvent) => sum + event.amountCents, 0);
+          .filter((event: RevenueEventLike) => event.occurredAt < startAt)
+          .reduce((sum: number, event: RevenueEventLike) => sum + event.amountCents, 0);
         const postAmount = subjectEvents
-          .filter((event: RevenueEvent) => event.occurredAt >= startAt)
-          .reduce((sum: number, event: RevenueEvent) => sum + event.amountCents, 0);
+          .filter((event: RevenueEventLike) => event.occurredAt >= startAt)
+          .reduce((sum: number, event: RevenueEventLike) => sum + event.amountCents, 0);
         return { subjectId: subject.subjectId, preAmount, postAmount };
       });
     };

@@ -59,7 +59,7 @@ const main = async () => {
     }
   });
 
-  const exposures: Array<{
+  type ExposureSeed = {
     tenantId: string;
     experimentId: string;
     subjectType: "user";
@@ -68,27 +68,34 @@ const main = async () => {
     exposedAt: Date;
     source: string;
     metadataJson: null;
-  }> = Array.from({ length: 120 }, (_, idx) => ({
-    tenantId: tenant.id,
-    experimentId: experiment.id,
-    subjectType: "user" as const,
-    subjectId: `treat-${idx}`,
-    group: "treatment" as const,
-    exposedAt: experiment.startAt,
-    source: "seed",
-    metadataJson: null
-  })).concat(
-    Array.from({ length: 120 }, (_, idx) => ({
+  };
+
+  const exposures: ExposureSeed[] = [];
+  for (let idx = 0; idx < 120; idx += 1) {
+    exposures.push({
       tenantId: tenant.id,
       experimentId: experiment.id,
-      subjectType: "user" as const,
-      subjectId: `ctrl-${idx}`,
-      group: "control" as const,
+      subjectType: "user",
+      subjectId: `treat-${idx}`,
+      group: "treatment",
       exposedAt: experiment.startAt,
       source: "seed",
       metadataJson: null
-    }))
-  );
+    });
+  }
+
+  for (let idx = 0; idx < 120; idx += 1) {
+    exposures.push({
+      tenantId: tenant.id,
+      experimentId: experiment.id,
+      subjectType: "user",
+      subjectId: `ctrl-${idx}`,
+      group: "control",
+      exposedAt: experiment.startAt,
+      source: "seed",
+      metadataJson: null
+    });
+  }
 
   await prisma.experimentExposure.createMany({ data: exposures });
 

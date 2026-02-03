@@ -59,16 +59,7 @@ const main = async () => {
     }
   });
 
-  const exposures: Array<{
-    tenantId: string;
-    experimentId: string;
-    subjectType: "user";
-    subjectId: string;
-    group: "treatment" | "control";
-    exposedAt: Date;
-    source: string;
-    metadataJson: null;
-  }> = Array.from({ length: 120 }, (_, idx) => ({
+  const exposures = Array.from({ length: 120 }, (_, idx) => ({
     tenantId: tenant.id,
     experimentId: experiment.id,
     subjectType: "user" as const,

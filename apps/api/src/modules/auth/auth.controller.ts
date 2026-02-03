@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, TooManyRequestsException, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, HttpStatus, Post, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { LoginDto, RefreshDto } from "./auth.dto";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
@@ -22,7 +22,7 @@ export class AuthController {
     entry.count += 1;
     AuthController.attempts.set(key, entry);
     if (entry.count > 10) {
-      throw new TooManyRequestsException("Too many login attempts, please try again later.");
+      throw new HttpException("Too many login attempts, please try again later.", HttpStatus.TOO_MANY_REQUESTS);
     }
     return this.authService.login(dto.email, dto.password);
   }

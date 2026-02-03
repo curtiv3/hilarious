@@ -5,6 +5,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { AuthenticatedRequest } from "../../common/tenancy/authenticated-request";
 import { revenueCsvSchema } from "@hilarious/shared";
+import type { Express } from "express";
 
 @Controller("revenue")
 @UseGuards(JwtAuthGuard)
@@ -77,15 +78,4 @@ export class RevenueController {
     return { imported };
   }
 
-  @Post("/integrations/stripe/webhook")
-  async stripeWebhook(@Req() req: AuthenticatedRequest) {
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (secret) {
-      const signature = req.headers["stripe-signature"];
-      if (!signature) {
-        return { received: false };
-      }
-    }
-    return { received: true };
-  }
 }

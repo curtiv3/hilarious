@@ -1,4 +1,5 @@
 import { Role } from "@hilarious/shared";
+import { Request } from "express";
 
 export interface AuthenticatedUser {
   id: string;

@@ -59,17 +59,21 @@ export class RevenueController {
         rawJson: JSON.stringify(record)
       };
       if (parsed.data.external_id) {
-        await this.prisma.revenueEvent.upsert({
+        const existing = await this.prisma.revenueEvent.findFirst({
           where: {
-            tenantId_sourceId_externalId: {
-              tenantId: req.user.tenantId,
-              sourceId: null,
-              externalId: parsed.data.external_id
-            }
-          },
-          update: payload,
-          create: payload
+            tenantId: req.user.tenantId,
+            externalId: parsed.data.external_id,
+            sourceId: null
+          }
         });
+        if (existing) {
+          await this.prisma.revenueEvent.update({
+            where: { id: existing.id },
+            data: payload
+          });
+        } else {
+          await this.prisma.revenueEvent.create({ data: payload });
+        }
       } else {
         await this.prisma.revenueEvent.create({ data: payload });
       }

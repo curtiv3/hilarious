@@ -12,6 +12,7 @@ import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../../common/crypto/s3-client";
 import type { Express } from "express";
+import { ExperimentStatus } from "@prisma/client";
 
 @Controller("experiments")
 @UseGuards(JwtAuthGuard)
@@ -29,6 +30,7 @@ export class ExperimentsController {
       data: {
         ...dto,
         tenantId: req.user.tenantId,
+        status: dto.status as ExperimentStatus,
         startAt: new Date(dto.startAt),
         endAt: dto.endAt ? new Date(dto.endAt) : null,
         createdByUserId: req.user.id
@@ -47,6 +49,7 @@ export class ExperimentsController {
       where: { id, tenantId: req.user.tenantId },
       data: {
         ...dto,
+        status: dto.status ? (dto.status as ExperimentStatus) : undefined,
         startAt: dto.startAt ? new Date(dto.startAt) : undefined,
         endAt: dto.endAt ? new Date(dto.endAt) : undefined
       }
@@ -57,7 +60,7 @@ export class ExperimentsController {
   async start(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
     return this.prisma.experiment.update({
       where: { id, tenantId: req.user.tenantId },
-      data: { status: "running", startAt: new Date() }
+      data: { status: ExperimentStatus.running, startAt: new Date() }
     });
   }
 
@@ -65,7 +68,7 @@ export class ExperimentsController {
   async end(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
     return this.prisma.experiment.update({
       where: { id, tenantId: req.user.tenantId },
-      data: { status: "ended", endAt: new Date() }
+      data: { status: ExperimentStatus.ended, endAt: new Date() }
     });
   }
 

@@ -26,14 +26,13 @@ export class AuditLogInterceptor implements NestInterceptor {
         if (!tenantId) {
           return;
         }
-        const entityId = (result as { id?: string } | undefined)?.id ?? "unknown";
         await this.prisma.auditLog.create({
           data: {
             tenantId,
             actorUserId: request.user?.id ?? null,
             action: method,
             entityType: request.route?.path ?? request.originalUrl,
-            entityId,
+            entityId: result?.id ?? "unknown",
             ip: request.ip,
             userAgent: request.headers["user-agent"] ?? null,
             diffJson: JSON.stringify({ payload: request.body })

@@ -11,7 +11,6 @@ import PDFDocument from "pdfkit";
 import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { s3Client } from "../../common/crypto/s3-client";
-import type { Express } from "express";
 
 @Controller("experiments")
 @UseGuards(JwtAuthGuard)
@@ -171,7 +170,7 @@ export class ExperimentsController {
     }
     const doc = new PDFDocument({ margin: 40 });
     const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("data", (chunk) => chunks.push(chunk));
     doc.fontSize(18).text(`Experiment Report: ${experiment.name}`);
     doc.moveDown().fontSize(12).text(`Hypothesis: ${experiment.hypothesis}`);
     doc.text(`Start: ${experiment.startAt.toISOString()}`);
@@ -185,9 +184,9 @@ export class ExperimentsController {
       doc.on("end", () => resolve(Buffer.concat(chunks)));
     });
 
-    const bucket = process.env.S3_BUCKET ?? "";
+    const bucket = process.env.S3_BUCKET ?? \"\";
     const key = `exports/${req.user.tenantId}/${experiment.id}/${snapshot.id}.pdf`;
-    await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: pdfBuffer, ContentType: "application/pdf" }));
+    await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: pdfBuffer, ContentType: \"application/pdf\" }));
     const url = await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: 3600 });
     return { url };
   }

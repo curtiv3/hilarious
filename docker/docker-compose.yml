@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: hilarious
+      POSTGRES_PASSWORD: hilarious
+      POSTGRES_DB: hilarious
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://hilarious:hilarious@postgres:5432/hilarious
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_jwt_secret
+      JWT_REFRESH_SECRET: dev_refresh_secret
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: hilarious
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio123
+      ENCRYPTION_KEY: dev_encryption_key
+      CORS_ORIGIN: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  minio_data:

@@ -16,6 +16,7 @@ Multi-tenant SaaS for verifying whether growth experiments increase revenue (MRR
 /packages
   /shared
 /docker
+  minio-init.sh
 ```
 
 ## Setup
@@ -52,6 +53,7 @@ docker-compose up --build
 pnpm install
 pnpm --filter @hilarious/api start:dev
 pnpm --filter @hilarious/web dev
+pnpm seed
 ```
 
 ## CSV Formats

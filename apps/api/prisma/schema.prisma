@@ -83,6 +83,8 @@ model Tenant {
   snapshots  MetricSnapshot[]
   auditLogs  AuditLog[]
   usageDaily UsageDaily[]
+
+  @@index([createdAt])
 }
 
 model User {
@@ -101,6 +103,7 @@ model User {
   auditLogs     AuditLog[]
 
   @@unique([tenantId, email])
+  @@index([tenantId, createdAt])
 }
 
 model DataSource {
@@ -114,6 +117,8 @@ model DataSource {
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   revenueEvents RevenueEvent[]
+
+  @@index([tenantId, createdAt])
 }
 
 model Experiment {
@@ -134,8 +139,11 @@ model Experiment {
   createdBy  User           @relation("ExperimentCreator", fields: [createdByUserId], references: [id])
   createdAt  DateTime        @default(now())
   updatedAt  DateTime        @updatedAt
+  deletedAt  DateTime?
   exposures  ExperimentExposure[]
   snapshots  MetricSnapshot[]
+
+  @@index([tenantId, createdAt])
 }
 
 model ExperimentExposure {
@@ -150,6 +158,8 @@ model ExperimentExposure {
   exposedAt    DateTime
   source       String
   metadataJson String?
+
+  @@unique([tenantId, experimentId, subjectType, subjectId])
 }
 
 model RevenueEvent {
@@ -169,6 +179,7 @@ model RevenueEvent {
   createdAt   DateTime        @default(now())
 
   @@unique([tenantId, sourceId, externalId])
+  @@index([tenantId, createdAt])
 }
 
 model MetricSnapshot {
@@ -187,6 +198,8 @@ model MetricSnapshot {
   notes           String?
   breakdownJson   String?
   createdAt       DateTime    @default(now())
+
+  @@index([tenantId, createdAt])
 }
 
 model AuditLog {
@@ -202,6 +215,8 @@ model AuditLog {
   userAgent   String?
   diffJson    String?
   createdAt   DateTime @default(now())
+
+  @@index([tenantId, createdAt])
 }
 
 model UsageDaily {

@@ -28,6 +28,18 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: hilarious
+      S3_ACCESS_KEY: minio
+      S3_SECRET_KEY: minio123
+    volumes:
+      - ./minio-init.sh:/minio-init.sh
+    entrypoint: ["/bin/sh", "/minio-init.sh"]
 
   api:
     build:
@@ -50,6 +62,7 @@ services:
       - postgres
       - redis
       - minio
+      - minio-init
 
   web:
     build:

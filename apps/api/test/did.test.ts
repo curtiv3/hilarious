@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeDid } from "../src/experiments/did";
+import { computeDid } from "../src/modules/experiments/did";
 
 const makeSubjects = (count: number, pre: number, post: number) =>
   Array.from({ length: count }, (_, idx) => ({

@@ -3,9 +3,11 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
 import pinoHttp from "pino-http";
+import { tenantMiddleware } from "./common/tenancy/tenant.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: false });
+  app.use(tenantMiddleware);
   app.use(pinoHttp());
   app.setGlobalPrefix("v1");
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

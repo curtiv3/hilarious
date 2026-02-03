@@ -7,8 +7,10 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "pnpm -r --parallel dev",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "seed": "pnpm --filter @hilarious/api seed"
   }
 }

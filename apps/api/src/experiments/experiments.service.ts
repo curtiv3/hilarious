@@ -1,65 +1,10 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
 import { computeDid } from "./did";
-import { Queue, Worker } from "bullmq";
 
 @Injectable()
-export class ExperimentsService implements OnModuleInit {
-  private computeQueue!: Queue;
-
+export class ExperimentsService {
   constructor(private prisma: PrismaService) {}
-
-  async onModuleInit() {
-    this.computeQueue = new Queue("compute", { connection: { url: process.env.REDIS_URL } });
-    const worker = new Worker(
-      "compute",
-      async (job) => {
-        const { tenantId, experimentId } = job.data as { tenantId: string; experimentId: string };
-        await this.prisma.auditLog.create({
-          data: {
-            tenantId,
-            actorUserId: null,
-            action: "COMPUTE_START",
-            entityType: "experiment",
-            entityId: experimentId,
-            diffJson: JSON.stringify({ jobId: job.id })
-          }
-        });
-        const result = await this.recomputeSnapshot(tenantId, experimentId);
-        await this.prisma.auditLog.create({
-          data: {
-            tenantId,
-            actorUserId: null,
-            action: "COMPUTE_FINISH",
-            entityType: "experiment",
-            entityId: experimentId,
-            diffJson: JSON.stringify({ jobId: job.id })
-          }
-        });
-        return result;
-      },
-      { connection: { url: process.env.REDIS_URL } }
-    );
-    worker.on("failed", async (job) => {
-      if (!job) return;
-      const { tenantId, experimentId } = job.data as { tenantId: string; experimentId: string };
-      await this.prisma.auditLog.create({
-        data: {
-          tenantId,
-          actorUserId: null,
-          action: "COMPUTE_FAILED",
-          entityType: "experiment",
-          entityId: experimentId,
-          diffJson: JSON.stringify({ jobId: job.id })
-        }
-      });
-    });
-  }
-
-  async enqueueRecompute(tenantId: string, experimentId: string) {
-    const job = await this.computeQueue.add("recompute", { tenantId, experimentId });
-    return { jobId: job.id };
-  }
 
   async recomputeSnapshot(tenantId: string, experimentId: string) {
     const experiment = await this.prisma.experiment.findFirst({
@@ -74,8 +19,8 @@ export class ExperimentsService implements OnModuleInit {
     });
 
     const startAt = experiment.startAt;
-    const preDays = 14;
-    const postDays = 14;
+    const preDays = 30;
+    const postDays = 30;
     const preStart = new Date(startAt.getTime() - preDays * 24 * 60 * 60 * 1000);
     const postEnd = new Date(startAt.getTime() + postDays * 24 * 60 * 60 * 1000);
 
@@ -111,14 +56,14 @@ export class ExperimentsService implements OnModuleInit {
       data: {
         tenantId,
         experimentId,
-        modelVersion: "v1_did_bootstrap",
+        modelVersion: "v1-prepost-did",
         windowPreDays: preDays,
         windowPostDays: postDays,
         upliftPercent: result.upliftPercent ?? null,
         upliftAmountCents: result.upliftAmount ? Math.round(result.upliftAmount) : null,
         confidenceLevel: result.confidenceLevel ?? null,
-        notes: result.insufficientData ? "Insufficient data" : result.warnings.length ? result.warnings.join(",") : null,
-        breakdownJson: result.ci ? JSON.stringify({ ci: result.ci }) : null
+        notes: result.insufficientData ? "Insufficient data" : null,
+        breakdownJson: null
       }
     });
 

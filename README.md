@@ -81,6 +81,3 @@ pnpm --filter @hilarious/web test
 
 ## Seed Demo (coming soon)
 Seed script will create DemoCo tenant, demo users, sample experiment, exposures, revenue, and computed snapshot.
-
-## Branch Note
-This branch includes a small README edit per request.

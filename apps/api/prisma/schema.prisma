@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantPlan {
+  starter
+  scale
+  enterprise
+}
+
+enum TenantStatus {
+  active
+  trial
+  past_due
+  canceled
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  ANALYST
+  VIEWER
+  SUPERADMIN
+}
+
+enum DataSourceType {
+  stripe
+  csv
+  manual
+  hubspot
+}
+
+enum ExperimentStatus {
+  draft
+  running
+  ended
+  archived
+}
+
+enum PrimaryMetric {
+  mrr
+  revenue
+  arr
+  pipeline
+}
+
+enum SubjectType {
+  user
+  account
+}
+
+enum ExposureGroup {
+  control
+  treatment
+}
+
+enum RevenueEventType {
+  payment
+  refund
+  invoice_paid
+  subscription_created
+  churn
+}
+
+model Tenant {
+  id         String      @id @default(uuid())
+  name       String
+  slug       String      @unique
+  plan       TenantPlan
+  status     TenantStatus
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  users      User[]
+  sources    DataSource[]
+  experiments Experiment[]
+  exposures  ExperimentExposure[]
+  revenueEvents RevenueEvent[]
+  snapshots  MetricSnapshot[]
+  auditLogs  AuditLog[]
+  usageDaily UsageDaily[]
+}
+
+model User {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  email         String
+  passwordHash  String
+  refreshTokenHash String?
+  role          Role
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  experiments   Experiment[] @relation("ExperimentCreator")
+  auditLogs     AuditLog[]
+
+  @@unique([tenantId, email])
+}
+
+model DataSource {
+  id         String        @id @default(uuid())
+  tenantId   String
+  tenant     Tenant        @relation(fields: [tenantId], references: [id])
+  type       DataSourceType
+  name       String
+  configJson String
+  status     String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  revenueEvents RevenueEvent[]
+}
+
+model Experiment {
+  id         String          @id @default(uuid())
+  tenantId   String
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  name       String
+  hypothesis String
+  startAt    DateTime
+  endAt      DateTime?
+  status     ExperimentStatus
+  primaryMetric PrimaryMetric
+  currency   String
+  treatmentDefinitionJson String
+  controlDefinitionJson   String
+  tags       String[]
+  createdByUserId String
+  createdBy  User           @relation("ExperimentCreator", fields: [createdByUserId], references: [id])
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  exposures  ExperimentExposure[]
+  snapshots  MetricSnapshot[]
+}
+
+model ExperimentExposure {
+  id           String        @id @default(uuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  experimentId String
+  experiment   Experiment    @relation(fields: [experimentId], references: [id])
+  subjectType  SubjectType
+  subjectId    String
+  group        ExposureGroup
+  exposedAt    DateTime
+  source       String
+  metadataJson String?
+}
+
+model RevenueEvent {
+  id          String          @id @default(uuid())
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  sourceId    String?
+  source      DataSource?     @relation(fields: [sourceId], references: [id])
+  occurredAt  DateTime
+  subjectType SubjectType
+  subjectId   String
+  amountCents Int
+  currency    String
+  eventType   RevenueEventType
+  externalId  String?
+  rawJson     String
+  createdAt   DateTime        @default(now())
+
+  @@unique([tenantId, sourceId, externalId])
+}
+
+model MetricSnapshot {
+  id              String      @id @default(uuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  experimentId    String
+  experiment      Experiment  @relation(fields: [experimentId], references: [id])
+  computedAt      DateTime    @default(now())
+  modelVersion    String
+  windowPreDays   Int
+  windowPostDays  Int
+  upliftPercent   Float?
+  upliftAmountCents Int?
+  confidenceLevel Float?
+  notes           String?
+  breakdownJson   String?
+  createdAt       DateTime    @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  actorUserId String?
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  ip          String?
+  userAgent   String?
+  diffJson    String?
+  createdAt   DateTime @default(now())
+}
+
+model UsageDaily {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  date      DateTime
+  countsJson String
+
+  @@unique([tenantId, date])
+}

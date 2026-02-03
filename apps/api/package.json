@@ -3,10 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "pnpm prisma:generate && nest build",
+    "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "seed": "ts-node src/prisma/seed.ts",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
@@ -54,7 +53,6 @@
     "testcontainers": "^10.9.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0",
-    "prisma": "^5.13.0"
+    "vitest": "^1.6.0"
   }
 }
